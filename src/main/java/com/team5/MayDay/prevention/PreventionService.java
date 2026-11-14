@@ -60,11 +60,14 @@ public class PreventionService {
         return toResponse(preventionRepository.save(rule));
     }
 
+    /** category 가 없으면 전체 항목 */
     @Transactional(readOnly = true)
     public List<PreventionResponse> findByCategory(String category) {
 
-        return preventionRepository
-                .findByCategoryOrderByCreatedAtDesc(category)
+        List<PreventionRule> rules = (category == null || category.isBlank())
+                ? preventionRepository.findAllByOrderByCreatedAtDesc()
+                : preventionRepository.findByCategoryOrderByCreatedAtDesc(category);
+        return rules
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -82,14 +85,6 @@ public class PreventionService {
     }
 
     private PreventionResponse toResponse(PreventionRule rule) {
-
-        return new PreventionResponse(
-                rule.getId(),
-                rule.getExperienceId(),
-                rule.getCategory(),
-                rule.getContent(),
-                rule.getTriggerPoint(),
-                rule.getCreatedAt()
-        );
+        return PreventionResponse.from(rule);
     }
 }
