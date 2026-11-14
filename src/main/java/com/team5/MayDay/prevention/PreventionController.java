@@ -26,9 +26,10 @@ public class PreventionController {
         return preventionService.save(id, request);
     }
 
+    /** category 를 빼면 전체 항목 */
     @GetMapping("/api/preventions")
     public List<PreventionResponse> findByCategory(
-            @RequestParam String category) {
+            @RequestParam(required = false) String category) {
 
         return preventionService.findByCategory(category);
     }

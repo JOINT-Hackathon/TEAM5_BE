@@ -11,4 +11,9 @@ public interface PreventionRepository
     );
 
     List<PreventionRule> findByExperienceId(Long experienceId);
+
+    List<PreventionRule> findAllByOrderByCreatedAtDesc();
+
+    /** AI 중복 검사에 넘길 최근 항목 */
+    List<PreventionRule> findTop50ByOrderByCreatedAtDesc();
 }
