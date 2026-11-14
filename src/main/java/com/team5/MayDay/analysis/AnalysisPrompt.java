@@ -105,9 +105,10 @@ final class AnalysisPrompt {
                 "what": "언제, 누구에게/어디서, 무엇이 있었는지 한 문장. 예: 11/14 오전 10시, 거래처 ○○에 수정 전 견적서(v1) 발송",
                 "why": {
                   "cause": "원인을 과정이나 절차 관점으로. 확인된 원인과 가능한 원인을 구분해서 쓴다.",
-                  "selfBlameQuote": "사용자가 자신을 탓한 표현을 원문 그대로. 없으면 null",
+                  "selfBlameQuote": "사용자가 스스로를 탓한 표현을 원문 그대로. 없으면 null",
                   "reflectionQuestion": "selfBlameQuote 가 있을 때만, 개인 탓 대신 확인 장치를 돌아보게 하는 질문. 없으면 null"
                 },
+                "harmfulBehavior": "다른 사람이 사용자에게 한 모욕, 비하, 위협 표현이 있으면 그 사실을 한 문장으로 기록. 없으면 null",
                 "impact": {
                   "urgency": "URGENT | NORMAL | LOW",
                   "content": "확인된 영향과 아직 확인 중인 영향을 짧게. 영향이 없다고 단정하지 않는다."
@@ -116,6 +117,15 @@ final class AnalysisPrompt {
               }
             }
             needMoreInfo=true 이면 report 는 null.
+            what: 모르는 정보는 빼고 자연스러운 한 문장으로 쓴다. "확인 필요, 팀장에게," 처럼 항목을 나열하지 않는다.
+              시각을 모르면 시각 없이 쓴다. 예: "팀장님께 기획서의 오탈자와 템플릿 미준수를 지적받음"
+            selfBlameQuote 와 harmfulBehavior 를 절대 섞지 않는다.
+              - selfBlameQuote 는 사용자가 자기 자신에게 한 말만 해당한다. 예: "내가 덜렁대서", "나는 왜 이럴까"
+              - 다른 사람(팀장님, 동료 등)이 사용자에게 한 말은 selfBlameQuote 가 아니다. 예: 팀장님이 "바보"라고 한 것
+            harmfulBehavior: 업무 피드백과 별개로 부적절한 표현이었다는 점을 그대로 기록한다.
+              사용자의 오해로 축소하거나, 업무 실수 때문에 들을 만했다는 식으로 쓰지 않는다.
+              예: "업무 피드백과 함께 팀장님에게서 '바보'라는 인격적인 비하 표현을 들음"
+              이 내용은 cause, prevention 에 넣지 않는다. 재발 방지는 업무 과정에 대해서만 쓴다.
             urgency: 외부(거래처, 고객)에 이미 나갔거나 마감이 오늘이면 URGENT.
             prevention: 1~3개, 체크박스에 들어갈 짧은 문장.
               이번 사건을 수습하는 행동(보고하기, 재발송하기 등)이 아니라, 다음에 비슷한 업무를 할 때 같은 일이 생기지 않게 하는 확인 습관이나 규칙을 쓴다.

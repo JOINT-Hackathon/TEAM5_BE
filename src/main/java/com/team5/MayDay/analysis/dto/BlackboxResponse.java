@@ -16,6 +16,11 @@ public record BlackboxResponse(
             /** 언제, 어디서(누구에게), 무엇이 있었는지 */
             String what,
             Why why,
+            /**
+             * 다른 사람에게서 들은 모욕, 비하, 위협 표현 기록. 없으면 null.
+             * 업무 수정과 별개로 보존하며, 상사용 메일에는 넣지 않는다.
+             */
+            String harmfulBehavior,
             Impact impact,
             /** 체크해서 재발 방지 체크리스트로 저장할 후보 */
             List<String> prevention
