@@ -2,7 +2,10 @@ package com.team5.MayDay.analysis;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -39,10 +42,10 @@ public class AnalysisService {
     public BlackboxResponse blackbox(BlackboxRequest request) {
         BlackboxAiResult result = ask(AnalysisPrompt.BLACKBOX_SYSTEM,
                 AnalysisPrompt.blackboxUser(request.incident(), request.checklist(),
-                        request.answers(), request.skipQuestions()),
+                        request.answers(), request.skip()),
                 BlackboxAiResult.class);
 
-        if (needsMoreInfo(result.needMoreInfo(), result.questions(), request.skipQuestions())) {
+        if (needsMoreInfo(result.needMoreInfo(), result.questions(), request.skip())) {
             return new BlackboxResponse(GenerationStatus.NEED_MORE_INFO, limit(result.questions()), null);
         }
         if (result.report() == null) {
@@ -60,15 +63,16 @@ public class AnalysisService {
                 AnalysisPrompt.emailUser(request, recipient, tone),
                 EmailAiResult.class);
 
-        if (needsMoreInfo(result.needMoreInfo(), result.questions(), request.skipQuestions())) {
+        if (needsMoreInfo(result.needMoreInfo(), result.questions(), request.skip())) {
             return new ReportEmailResponse(GenerationStatus.NEED_MORE_INFO, limit(result.questions()), null);
         }
         if (result.email() == null) {
             throw new AiException("수습 보고 메일이 비어 있습니다.");
         }
 
-        List<AppliedAction> appliedActions = toAppliedActions(request.checklist(), tone);
-        String body = ReportEmailFormatter.body(result.email(), appliedActions);
+        List<AppliedAction> appliedActions = toAppliedActions(request.checklist(), tone, result.email());
+        String body = ReportEmailFormatter.body(result.email(), appliedActions, recipient,
+                tone == ReportEmailRequest.Tone.FORMAL);
         return new ReportEmailResponse(GenerationStatus.COMPLETED, List.of(),
                 new ReportEmailResponse.Email(result.email().subject(), body, appliedActions));
     }
@@ -76,32 +80,46 @@ public class AnalysisService {
     /**
      * 체크리스트 상태 → 메일 [현재 조치] 문장.
      * 완료만 "완료", 진행 중은 "진행 중", 미착수는 "예정"으로 쓰고 해당 없음은 뺀다.
+     * 상태는 항상 사용자가 표시한 값을 그대로 쓰고, AI 는 문장 다듬기와 '받는 사람에게 보고하기' 항목 제외만 한다.
      */
-    private List<AppliedAction> toAppliedActions(List<ChecklistState> checklist, ReportEmailRequest.Tone tone) {
+    private List<AppliedAction> toAppliedActions(List<ChecklistState> checklist, ReportEmailRequest.Tone tone,
+                                                 EmailParts parts) {
         if (checklist == null) {
             return List.of();
         }
+        Map<Integer, String> phrases = new HashMap<>();
+        if (parts.actionPhrases() != null) {
+            parts.actionPhrases().stream()
+                    .filter(p -> p.order() != null && StringUtils.hasText(p.phrase()))
+                    .forEach(p -> phrases.put(p.order(), p.phrase().strip()));
+        }
+        Set<Integer> excluded = parts.excludedOrders() == null ? Set.of() : Set.copyOf(parts.excludedOrders());
+
         List<AppliedAction> actions = new ArrayList<>();
         checklist.stream()
                 .filter(item -> item.status() != ChecklistState.Status.NOT_APPLICABLE)
+                .filter(item -> !excluded.contains(item.order()))
                 .sorted(Comparator.comparingInt(ChecklistState::order))
-                .forEach(item -> actions.add(new AppliedAction(item.order(), item.action(), item.status(),
-                        item.action() + " " + statusLabel(item.status(), tone))));
+                .forEach(item -> {
+                    String phrase = phrases.getOrDefault(item.order(), item.action());
+                    actions.add(new AppliedAction(item.order(), item.action(), item.status(),
+                            phrase + " (" + statusLabel(item.status(), tone) + ")"));
+                });
         return actions;
     }
 
     private static String statusLabel(ChecklistState.Status status, ReportEmailRequest.Tone tone) {
         boolean formal = tone == ReportEmailRequest.Tone.FORMAL;
         return switch (status) {
-            case DONE -> formal ? "완료" : "완료했어요";
-            case IN_PROGRESS -> formal ? "진행 중" : "진행 중이에요";
-            case TODO -> formal ? "예정" : "할 예정이에요";
+            case DONE -> "완료";
+            case IN_PROGRESS -> formal ? "진행 중" : "하는 중";
+            case TODO -> "예정";
             case NOT_APPLICABLE -> "";
         };
     }
 
-    private static boolean needsMoreInfo(boolean needMoreInfo, List<String> questions, boolean skipQuestions) {
-        return !skipQuestions && needMoreInfo && questions != null && !questions.isEmpty();
+    private static boolean needsMoreInfo(Boolean needMoreInfo, List<String> questions, boolean skipQuestions) {
+        return !skipQuestions && Boolean.TRUE.equals(needMoreInfo) && questions != null && !questions.isEmpty();
     }
 
     private static List<String> limit(List<String> questions) {
@@ -118,13 +136,18 @@ public class AnalysisService {
     }
 
     // AI 가 돌려주는 원본 형식 (needMoreInfo 플래그 포함)
-    record BlackboxAiResult(boolean needMoreInfo, List<String> questions, BlackboxResponse.Report report) {
+    record BlackboxAiResult(Boolean needMoreInfo, List<String> questions, BlackboxResponse.Report report) {
     }
 
-    record EmailAiResult(boolean needMoreInfo, List<String> questions, EmailParts email) {
+    record EmailAiResult(Boolean needMoreInfo, List<String> questions, EmailParts email) {
     }
 
-    record EmailParts(String subject, String greeting, String situation, List<String> nextSteps,
-                      List<String> requests, String prevention, String closing) {
+    record EmailParts(String subject, String greeting, String situation,
+                      List<ActionPhrase> actionPhrases, List<Integer> excludedOrders,
+                      List<String> nextSteps, List<String> requests, String prevention, String closing) {
+    }
+
+    /** 체크리스트 항목을 보고서 말투의 명사형으로 다듬은 것 (상태는 포함하지 않음) */
+    record ActionPhrase(Integer order, String phrase) {
     }
 }

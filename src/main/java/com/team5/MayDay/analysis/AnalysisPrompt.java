@@ -118,6 +118,9 @@ final class AnalysisPrompt {
             needMoreInfo=true 이면 report 는 null.
             urgency: 외부(거래처, 고객)에 이미 나갔거나 마감이 오늘이면 URGENT.
             prevention: 1~3개, 체크박스에 들어갈 짧은 문장.
+              이번 사건을 수습하는 행동(보고하기, 재발송하기 등)이 아니라, 다음에 비슷한 업무를 할 때 같은 일이 생기지 않게 하는 확인 습관이나 규칙을 쓴다.
+              수습 체크리스트 항목을 그대로 옮기지 않는다.
+              예: "외부 발송 전 첨부파일 직접 열어보기", "파일명에 '최종_날짜' 규칙 적용"
             """;
 
     static String blackboxUser(AnalysisRequest incident, List<ChecklistState> checklist,
@@ -139,6 +142,7 @@ final class AnalysisPrompt {
             [메일 작성 원칙]
             - 결론(무슨 일이 있었는지)부터 쓴다.
             - 감정 표현, 상사의 의도에 대한 추측, 과한 자기 비하는 넣지 않는다.
+            - 보내는 사람의 이름, 직급, 소속은 절대 지어내지 않는다. 첫 인사는 서버가 붙이므로 쓰지 않는다.
             - 사과는 짧게 한 번만. 원인이 확인되지 않았으면 "확인 중"이라고 쓴다.
             - 체크리스트에서 완료(DONE)가 아닌 조치를 이미 했다고 쓰지 않는다.
             - 상사의 판단이나 승인이 필요한 일이 있으면 requests 에 쓴다.
@@ -151,15 +155,23 @@ final class AnalysisPrompt {
               "questions": [],
               "email": {
                 "subject": "[보고] 로 시작하는 제목. 예: [보고] ○○ 견적서 발송 오류 및 조치 현황",
-                "greeting": "팀장님, ○○팀 △△입니다. 같은 첫 인사 (이름을 모르면 이름 없이)",
                 "situation": "무슨 일이 있었는지 1~2문장",
-                "nextSteps": ["앞으로 할 조치와 공유 시점(사용자가 말한 경우만)"],
+                "actionPhrases": [{"order": 1, "phrase": "견적서 v1·v2 차이 확인"}],
+                "excludedOrders": [2],
+                "nextSteps": ["체크리스트에 없는 후속 조치와 다음 공유 시점(사용자가 말한 경우만). 없으면 빈 배열"],
                 "requests": ["상사에게 확인이나 승인을 부탁할 내용. 없으면 빈 배열"],
                 "prevention": "재발 방지 한 문장",
                 "closing": "마무리 인사 한 문장"
               }
             }
             needMoreInfo=true 이면 email 은 null.
+
+            [체크리스트 관련 규칙]
+            - actionPhrases: 수습 체크리스트의 각 항목(order)을 보고서에 맞는 짧은 명사형으로 다듬는다.
+              "~하기" 대신 "~ 확인", "~ 재발송"처럼 끝낸다. 완료/진행 같은 상태 표현은 절대 넣지 않는다.
+            - excludedOrders: 이 메일을 받는 사람에게 보고하거나 공유하는 항목처럼, 이 메일 자체가 그 행동인 항목의 order.
+              예: 받는 사람이 팀장님이면 "팀장님께 상황 알리기" 항목. 없으면 빈 배열.
+            - nextSteps 에 체크리스트 항목을 다시 쓰지 않는다. 체크리스트는 서버가 [현재 조치]에 넣는다.
             """;
 
     static String emailUser(ReportEmailRequest request, String recipient, ReportEmailRequest.Tone tone) {
@@ -168,7 +180,7 @@ final class AnalysisPrompt {
                 + "[말투] " + tone + "\n"
                 + checklist(request.checklist())
                 + answers(request.answers())
-                + skip(request.skipQuestions());
+                + skip(request.skip());
     }
 
     // ---------- 공통 ----------

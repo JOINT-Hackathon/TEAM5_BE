@@ -22,7 +22,7 @@ public record AnalysisResponse(
             List<Emotion> emotions,
             String comfortMessage,
             /** 공개 모욕, 위협 등 상처를 준 행동이 기록된 경우 true */
-            boolean harmfulBehaviorDetected
+            Boolean harmfulBehaviorDetected
     ) {
     }
 

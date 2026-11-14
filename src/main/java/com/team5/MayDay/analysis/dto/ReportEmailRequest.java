@@ -19,8 +19,13 @@ public record ReportEmailRequest(
         /** 받는 사람 호칭. 없으면 "팀장님" */
         String recipient,
         List<QuestionAnswer> answers,
-        boolean skipQuestions
+        /** 안 보내면 false */
+        Boolean skipQuestions
 ) {
+    public boolean skip() {
+        return Boolean.TRUE.equals(skipQuestions);
+    }
+
     public enum Tone {
         FORMAL,
         CASUAL

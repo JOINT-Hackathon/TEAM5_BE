@@ -16,6 +16,10 @@ public record BlackboxRequest(
         @NotNull @Valid AnalysisRequest incident,
         @Valid List<ChecklistState> checklist,
         List<QuestionAnswer> answers,
-        boolean skipQuestions
+        /** 안 보내면 false */
+        Boolean skipQuestions
 ) {
+    public boolean skip() {
+        return Boolean.TRUE.equals(skipQuestions);
+    }
 }

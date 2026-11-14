@@ -13,9 +13,10 @@ final class ReportEmailFormatter {
     private ReportEmailFormatter() {
     }
 
-    static String body(EmailParts parts, List<AppliedAction> actions) {
+    static String body(EmailParts parts, List<AppliedAction> actions, String recipient, boolean formal) {
         StringBuilder sb = new StringBuilder();
-        line(sb, parts.greeting());
+        // 인사는 AI 에게 맡기지 않는다. AI 가 이름/소속을 지어내는 경우가 있어서 코드로 고정한다.
+        line(sb, recipient + (formal ? ", 보고드립니다." : ", 공유드릴 일이 있어요."));
         sb.append('\n');
         line(sb, parts.situation());
 
