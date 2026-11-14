@@ -130,7 +130,8 @@ final class AnalysisPrompt {
             prevention: 1~3개, 체크박스에 들어갈 짧은 문장.
               이번 사건을 수습하는 행동(보고하기, 재발송하기 등)이 아니라, 다음에 비슷한 업무를 할 때 같은 일이 생기지 않게 하는 확인 습관이나 규칙을 쓴다.
               수습 체크리스트 항목을 그대로 옮기지 않는다.
-              예: "외부 발송 전 첨부파일 직접 열어보기", "파일명에 '최종_날짜' 규칙 적용"
+              형식 예: "외부 발송 전 첨부파일 직접 열어보기", "파일명에 '최종_날짜' 규칙 적용"
+              (형식만 참고한다. 이 사건과 관계없는 예시 문장을 그대로 쓰지 않는다.)
             """;
 
     static String blackboxUser(AnalysisRequest incident, List<ChecklistState> checklist,
