@@ -111,9 +111,9 @@ public class AnalysisService {
     private static String statusLabel(ChecklistState.Status status, ReportEmailRequest.Tone tone) {
         boolean formal = tone == ReportEmailRequest.Tone.FORMAL;
         return switch (status) {
-            case DONE -> "완료";
+            case COMPLETED -> "완료";
             case IN_PROGRESS -> formal ? "진행 중" : "하는 중";
-            case TODO -> "예정";
+            case NOT_STARTED -> "예정";
             case NOT_APPLICABLE -> "";
         };
     }

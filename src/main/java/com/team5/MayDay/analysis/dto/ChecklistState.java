@@ -12,13 +12,14 @@ public record ChecklistState(
         @NotBlank String action,
         @NotNull Status status
 ) {
+    /** checklist.ChecklistStatus(DB 저장 값)와 같은 이름을 쓴다. 프론트가 조회한 값을 그대로 넘기면 된다. */
     public enum Status {
         /** 미착수 */
-        TODO,
+        NOT_STARTED,
         /** 진행 중 */
         IN_PROGRESS,
         /** 완료 */
-        DONE,
+        COMPLETED,
         /** 해당 없음 */
         NOT_APPLICABLE
     }

@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.team5.MayDay.ai.AiException;
 
@@ -35,9 +36,22 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("INVALID_INPUT", "요청 형식이 올바르지 않습니다."));
     }
 
+    /** ResponseStatusException(404, 400 등)은 지정된 상태 코드 그대로 내려준다. */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException e) {
+        return ResponseEntity.status(e.getStatusCode())
+                .body(new ErrorResponse(String.valueOf(e.getStatusCode().value()), e.getReason()));
+    }
+
     /** 예상하지 못한 에러: 해커톤 개발 중 원인 파악을 위해 예외 종류와 메시지를 같이 내려준다. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception e) {
+        // 없는 URL(404), 지원하지 않는 메서드(405) 등 Spring MVC 기본 에러는 원래 상태 코드 그대로
+        if (e instanceof org.springframework.web.ErrorResponse springError) {
+            return ResponseEntity.status(springError.getStatusCode())
+                    .body(new ErrorResponse(String.valueOf(springError.getStatusCode().value()),
+                            springError.getBody().getDetail()));
+        }
         log.error("[UNEXPECTED] {}", e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("INTERNAL_ERROR", e.getClass().getSimpleName() + ": " + e.getMessage()));
